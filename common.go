@@ -21,6 +21,7 @@ func Load_conf(fn string, c interface{}) error {
 
 	return nil
 }
+
 func GetHostId() string {
 	return GetHostName()
 }

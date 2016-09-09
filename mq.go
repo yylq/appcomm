@@ -2,7 +2,8 @@ package common
 
 import (
 	"fmt"
-	"godsee/log"
+
+	"github.com/yylq/log"
 
 	"github.com/streadway/amqp"
 )
