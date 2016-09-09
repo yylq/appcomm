@@ -4,19 +4,11 @@ import (
 	"godsee/log"
 	"os"
 
-	"github.com/larspensjo/config"
+	"github.com/yylq/config"
 )
 
 func Load_conf(fn string, c interface{}) error {
-	/*
-		cf := config.Config{}
-		cf.LoadFile(fn)
 
-		if err := cf.Load(appconf); err != nil {
-
-			return err
-		}
-	*/
 	cfg, err := config.ReadDefault(fn)
 	if err != nil {
 		return err
@@ -26,6 +18,7 @@ func Load_conf(fn string, c interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 func GetHostId() string {
