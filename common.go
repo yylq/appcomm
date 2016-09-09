@@ -43,6 +43,5 @@ func GetHostName() string {
 		}
 
 	}
-
 	return id
 }
