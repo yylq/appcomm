@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/yylq/log"
 
 	"strconv"
+
+	"crypto/md5"
 
 	"github.com/yylq/config"
 )
@@ -72,4 +75,16 @@ func GetPid(file string) (int, error) {
 func WritePid(file string, pid int) error {
 	s := fmt.Sprintf("%d", pid)
 	return ioutil.WriteFile(file, []byte(s), os.ModePerm)
+}
+
+func Md5(data string) string {
+	var in []byte
+	d := md5.New()
+	d.Reset()
+	d.Write([]byte(data))
+	return fmt.Sprintf("%x", d.Sum(in))
+}
+func GetDateString() string {
+	Y, M, D := time.Now().Date()
+	return fmt.Sprintf("%4d%02d%02d", Y, M, D)
 }
