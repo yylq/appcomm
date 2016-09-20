@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/yylq/log"
@@ -11,9 +12,18 @@ import (
 	"strconv"
 
 	"crypto/md5"
+	"path/filepath"
 
 	"github.com/yylq/config"
 )
+
+var leves = map[string]log.LEVEL{
+	"DEBUG": log.DEBUG,
+	"INFO":  log.INFO,
+	"WARN":  log.WARN,
+	"ERROR": log.DEBUG,
+	"FATAL": log.DEBUG,
+}
 
 func Load_conf(fn string, c interface{}) error {
 
@@ -26,6 +36,21 @@ func Load_conf(fn string, c interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+func LogInit(logpath string, loglevel string) error {
+
+	os.Mkdir(logpath, 0666)
+	fn := filepath.Base(os.Args[0]) + ".log"
+
+	log.SetRollingDaily(logpath, fn)
+	lev, ok := leves[strings.ToUpper(loglevel)]
+	if !ok {
+		lev = log.INFO
+	}
+
+	log.SetLevel(lev)
 
 	return nil
 }
