@@ -21,13 +21,25 @@ func (c *Conn) GetAll(key string) (map[string]string, error) {
 func (c *Conn) HMGet(v ...interface{}) (map[string]string, error) {
 	return redis.StringMap(c.conn.Do("HMGET", v...))
 }
-func (c *Conn) HSet(v ...interface{}) error {
-	_, err := redis.Int64(c.conn.Do("HSET", v...))
+func (c *Conn) HMGetString(v ...interface{}) (string, error) {
+	s, err := redis.Strings(c.conn.Do("HMGET", v...))
+	if err != nil {
+		return "", err
+	}
+	return s[0], nil
+}
+func (c *Conn) HMSet(v ...interface{}) error {
+	_, err := redis.String(c.conn.Do("HMSET", v...))
 	return err
 
 }
 func (c *Conn) HDel(v ...interface{}) error {
-	_, err := redis.Int64(c.conn.Do("Del", v...))
+	_, err := redis.Int64(c.conn.Do("HDEL", v...))
+	return err
+
+}
+func (c *Conn) Del(v ...interface{}) error {
+	_, err := redis.Int64(c.conn.Do("DEL", v...))
 	return err
 
 }

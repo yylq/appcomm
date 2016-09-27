@@ -2,6 +2,7 @@ package appcomm
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -53,7 +54,7 @@ func TestSet(t *testing.T) {
 		t.Fatal("set and get fail")
 	}
 	t.Logf("%T %v", s1, s1)
-	err = c.HDel("aaa")
+	err = c.Del("aaa")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,12 +68,52 @@ func TestHSet(t *testing.T) {
 	defer c.Close()
 
 	s := `{"aaa":"1111","bbb":2222}`
-	err = c.HSet("box", "box_02", []byte(s))
+	err = c.HMSet("box", "box_02", []byte(s))
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = c.HDel("box", "box_02")
 	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+func TestHGet(t *testing.T) {
+	c, err := NewRedisConn(redisip, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	host := "10.138.71.181"
+
+	res, err := c.HMGetString("table_lost", host)
+	if err != nil {
+		t.Fatalf(" check lost %s err:%v", host, err)
+	}
+	t.Log(reflect.TypeOf(res))
+	t.Log(res)
+}
+func TestHDel(t *testing.T) {
+	c, err := NewRedisConn(redisip, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	if err := c.HDel("table_lost", "10.138.71.181", "task_0"); err != nil {
+		t.Fatal(err)
+	}
+
+}
+func TestHMSet(t *testing.T) {
+	c, err := NewRedisConn(redisip, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	host := "10.138.71.181"
+	tid := "task_01"
+	if err := c.HMSet("table_lost", host, tid, tid, host); err != nil {
 		t.Fatal(err)
 	}
 

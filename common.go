@@ -39,7 +39,7 @@ func Load_conf(fn string, c interface{}) error {
 
 	return nil
 }
-func LogInit(logpath string, loglevel string) error {
+func LogInit(logpath string, loglevel string, console bool) error {
 
 	os.Mkdir(logpath, 0666)
 	fn := filepath.Base(os.Args[0]) + ".log"
@@ -51,7 +51,7 @@ func LogInit(logpath string, loglevel string) error {
 	}
 
 	log.SetLevel(lev)
-
+	log.SetConsole(console)
 	return nil
 }
 

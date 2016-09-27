@@ -18,11 +18,11 @@ func GetIDChannel(id string) string {
 }
 func MakeIDChannel(host string, id string) (*MQChannel, error) {
 	if id == "" {
-		return GetMQChannel(host, "")
+		return GetMQChannel(host, "", false)
 	}
-	return GetMQChannel(host, GetIDChannel(id))
+	return GetMQChannel(host, GetIDChannel(id), false)
 }
-func GetMQChannel(host string, name string) (*MQChannel, error) {
+func GetMQChannel(host string, name string, declare bool) (*MQChannel, error) {
 	log.Debugf("host:%s name:%s\n", host, name)
 	conn, err := amqp.Dial(host)
 	if err != nil {
@@ -36,7 +36,7 @@ func GetMQChannel(host string, name string) (*MQChannel, error) {
 
 		return nil, err
 	}
-	if name != "" {
+	if declare {
 		_, err = ch.QueueDeclare(
 			name,  // name
 			false, // durable
@@ -63,20 +63,8 @@ func (mch *MQChannel) MQSend(buf []byte) error {
 		})
 	return err
 }
-func (mch *MQChannel) MQSendBeforeDeclare(name string, buf []byte) error {
-	_, err := mch.Ch.QueueDeclare(
-		name,  // name
-		false, // durable
-		false, // delete when usused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-	if err != nil {
-		return err
-	}
-
-	err = mch.Ch.Publish(
+func (mch *MQChannel) MQSendWith(buf []byte, name string) error {
+	err := mch.Ch.Publish(
 		"",    // exchange
 		name,  // routing key
 		false, // mandatory
@@ -87,8 +75,25 @@ func (mch *MQChannel) MQSendBeforeDeclare(name string, buf []byte) error {
 		})
 	return err
 }
+func (mch *MQChannel) GetMsgHander() (<-chan amqp.Delivery, error) {
+	ch := mch.Ch
+	return ch.Consume(
+		mch.Name, // queue
+		"",       // consumer
+		true,     // auto-ack
+		false,    // exclusive
+		false,    // no-local
+		false,    // no-wait
+		nil,      // args
+	)
+}
+
 func (mch *MQChannel) MQClear() error {
 	_, err := mch.Ch.QueuePurge(mch.Name, true)
+	return err
+}
+func (mch *MQChannel) MQClearWith(name string) error {
+	_, err := mch.Ch.QueuePurge(name, true)
 	return err
 }
 func (mch *MQChannel) Close() error {
