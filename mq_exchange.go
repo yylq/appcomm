@@ -18,7 +18,7 @@ func MakeExchange(host, name, key string) (*MQExchange, error) {
 }
 
 func GetMQExchange(host, name, key string) (*MQExchange, error) {
-	log.Debugf("host:%s name:%s key:%s \n", host, name)
+	log.Debugf("host:%s name:%s key:%s \n", host, name, key)
 	conn, err := amqp.Dial(host)
 	if err != nil {
 

@@ -38,6 +38,11 @@ func (c *Conn) HDel(v ...interface{}) error {
 	return err
 
 }
+func (c *Conn) HExists(key, field string) (bool, error) {
+	v, err := redis.Int64(c.conn.Do("HEXISTS", key, field))
+	return v == 1, err
+
+}
 func (c *Conn) Del(v ...interface{}) error {
 	_, err := redis.Int64(c.conn.Do("DEL", v...))
 	return err
