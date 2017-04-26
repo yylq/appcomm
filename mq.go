@@ -9,8 +9,10 @@ import (
 )
 
 type MQChannel struct {
-	Ch   *amqp.Channel
-	Name string
+	Ch       *amqp.Channel
+	Name     string
+	Host     string
+	IsClosed bool
 }
 
 func GetIDChannel(id string) string {
@@ -24,19 +26,13 @@ func MakeIDChannel(host string, id string) (*MQChannel, error) {
 }
 func GetMQChannel(host string, name string, declare bool) (*MQChannel, error) {
 	log.Debugf("host:%s name:%s\n", host, name)
-	conn, err := amqp.Dial(host)
+	Channel := &MQChannel{Host: host, Name: name}
+	err := Channel.Open()
 	if err != nil {
-
-		return nil, err
-	}
-
-	ch, err := conn.Channel()
-
-	if err != nil {
-
 		return nil, err
 	}
 	if declare {
+		ch := Channel.Ch
 		_, err = ch.QueueDeclare(
 			name,  // name
 			false, // durable
@@ -46,25 +42,60 @@ func GetMQChannel(host string, name string, declare bool) (*MQChannel, error) {
 			nil,   // arguments
 		)
 		if err != nil {
+			Channel.Close()
 			return nil, err
 		}
 	}
-	return &MQChannel{Ch: ch, Name: name}, nil
+	return Channel, nil
 }
-func (mch *MQChannel) MQSend(buf []byte) error {
-	err := mch.Ch.Publish(
-		"",       // exchange
-		mch.Name, // routing key
-		false,    // mandatory
-		false,    // immediate
+func (this *MQChannel) Open() error {
+	conn, err := amqp.Dial(this.Host)
+	if err != nil {
+		return err
+	}
+	ch, err := conn.Channel()
+
+	if err != nil {
+
+		return err
+	}
+	this.Ch = ch
+	return nil
+}
+func (this *MQChannel) TryConnect() bool {
+	conn, err := amqp.Dial(this.Host)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
+}
+func (this *MQChannel) ReOpen() error {
+	if !this.IsClosed {
+		this.Close()
+	}
+	return this.Open()
+}
+func (this *MQChannel) MQSend(buf []byte) error {
+	if this.IsClosed {
+		return err_closed
+	}
+	err := this.Ch.Publish(
+		"",        // exchange
+		this.Name, // routing key
+		false,     // mandatory
+		false,     // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(buf),
 		})
 	return err
 }
-func (mch *MQChannel) MQSendWith(buf []byte, name string) error {
-	err := mch.Ch.Publish(
+func (this *MQChannel) MQSendWith(buf []byte, name string) error {
+	if this.IsClosed {
+		return err_closed
+	}
+	err := this.Ch.Publish(
 		"",    // exchange
 		name,  // routing key
 		false, // mandatory
@@ -75,28 +106,41 @@ func (mch *MQChannel) MQSendWith(buf []byte, name string) error {
 		})
 	return err
 }
-func (mch *MQChannel) GetMsgHander() (<-chan amqp.Delivery, error) {
-	ch := mch.Ch
+func (this *MQChannel) GetMsgHander() (<-chan amqp.Delivery, error) {
+	if this.IsClosed {
+		return nil, err_closed
+	}
+	ch := this.Ch
 	return ch.Consume(
-		mch.Name, // queue
-		"",       // consumer
-		true,     // auto-ack
-		false,    // exclusive
-		false,    // no-local
-		false,    // no-wait
-		nil,      // args
+		this.Name, // queue
+		"",        // consumer
+		true,      // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
 	)
 }
 
-func (mch *MQChannel) MQClear() error {
-	_, err := mch.Ch.QueuePurge(mch.Name, true)
+func (this *MQChannel) MQClear() error {
+	if this.IsClosed {
+		return err_closed
+	}
+	_, err := this.Ch.QueuePurge(this.Name, true)
 	return err
 }
-func (mch *MQChannel) MQClearWith(name string) error {
-	_, err := mch.Ch.QueuePurge(name, true)
+func (this *MQChannel) MQClearWith(name string) error {
+	if this.IsClosed {
+		return err_closed
+	}
+	_, err := this.Ch.QueuePurge(name, true)
 	return err
 }
-func (mch *MQChannel) Close() error {
-	err := mch.Ch.Close()
+func (this *MQChannel) Close() error {
+	if this.IsClosed {
+		return err_closed
+	}
+	err := this.Ch.Close()
+	this.IsClosed = true
 	return err
 }
